@@ -821,3 +821,171 @@
             const predictionCards = document.getElementById('predictionCards');
             predictionCards.innerHTML = predictions.map(p => `
                 <div class="prediction-card">
+                    <div class="prediction-value">${p.riskScore.toFixed(1)}%</div>
+                    <div class="prediction-label">Year ${p.year} Risk</div>
+                </div>
+            `).join('');
+            
+            // Create chart
+            createPredictionChart(predictions);
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Create prediction chart
+        function createPredictionChart(predictions) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.predictionChartInstance) {
+                window.predictionChartInstance.destroy();
+            }
+            
+            window.predictionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: predictions.map(p => `Year ${p.year}`),
+                    datasets: [{
+                        label: 'Progression Risk (%)',
+                        data: predictions.map(p => p.riskScore),
+                        borderColor: '#5a4fcf',
+                        backgroundColor: 'rgba(90, 79, 207, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#8E44AD',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8,
+                        pointHoverRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Alzheimer\'s Progression Risk Analysis',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#5a4fcf'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Risk Score (%)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(90, 79, 207, 0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Study Years',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(90, 79, 207, 0.1)'
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverBackgroundColor: '#8E44AD'
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Show specific step
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('#step1, #step2, #step3').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show current step
+            if (step <= 3) {
+                document.getElementById(`step${step}`).classList.remove('hidden');
+            }
+            
+            currentStep = step;
+            updateStepIndicator(step);
+        }
+        
+        // Reset tool
+        document.getElementById('resetTool').addEventListener('click', function() {
+            selectedYearCount = 0;
+            selectedYears = [];
+            formData = {};
+            
+            // Reset selections
+            document.querySelectorAll('.selection-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Reset buttons
+            document.getElementById('nextStep1').disabled = true;
+            document.getElementById('nextStep2').disabled = true;
+            document.getElementById('generatePrediction').disabled = true;
+            
+            // Reset forms
+            document.getElementById('yearForms').innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: #999;">
+                    <div style="font-size: 3em; margin-bottom: 20px;">📊</div>
+                    <h4>Patient Data Forms</h4>
+                    <p>Select study duration to begin data collection</p>
+                </div>
+            `;
+            
+            // Hide results
+            document.getElementById('results').style.display = 'none';
+            
+            // Destroy chart
+            if (window.predictionChartInstance) {
+                window.predictionChartInstance.destroy();
+            }
+            
+            // Show first step
+            showStep(1);
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Initialize
+        updateStepIndicator(1);
+    </script>
+</body>
+</html>
