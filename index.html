@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alzheimer's Progression Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9));
+            margin-bottom: 40px;
+            border-radius: 25px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .header h1 {
+            font-size: 3.5em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #e8e8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .header p {
+            font-size: 1.3em;
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+            position: relative;
+        }
+        
+        .brain-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            opacity: 0.2;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.2; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .left-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .right-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #5a4fcf;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            gap: 20px;
+        }
+        
+        .step-dot {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(90, 79, 207, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #5a4fcf;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            color: white;
+            box-shadow: 0 10px 25px rgba(90, 79, 207, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .step-dot::after {
+            content: '';
+            position: absolute;
+            width: 80px;
+            height: 2px;
+            background: rgba(90, 79, 207, 0.3);
+            right: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .step-dot:last-child::after {
+            display: none;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .slider-container {
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            border: 1px solid rgba(90, 79, 207, 0.1);
+        }
+        
+        .slider-label {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #5a4fcf;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .slider-wrapper {
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .slider-track {
+            position: relative;
+            height: 8px;
+            background: linear-gradient(90deg, #e0e0e0, #f0f0f0);
+            border-radius: 4px;
+            margin: 30px 0 40px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .slider-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #5a4fcf, #8E44AD);
+            border-radius: 4px;
+            width: 12.5%; /* 1/8 = 12.5% */
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(90, 79, 207, 0.3);
+        }
+        
+        .slider-thumb {
+            position: absolute;
+            top: -8px;
+            left: 12.5%;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            border-radius: 50%;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+            border: 3px solid white;
+            transform: translateX(-50%);
+        }
+        
+        .slider-thumb:hover {
+            transform: translateX(-50%) scale(1.2);
+            box-shadow: 0 6px 20px rgba(90, 79, 207, 0.5);
+        }
+        
+        .slider-thumb:active {
+            cursor: grabbing;
+            transform: translateX(-50%) scale(1.1);
+        }
+        
+        .slider-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 0 12px;
+        }
+        
+        .marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .marker:hover {
+            border-color: #5a4fcf;
+            color: #5a4fcf;
+            transform: scale(1.1);
+        }
+        
+        .marker.active {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            color: white;
+            border-color: #5a4fcf;
+            transform: scale(1.15);
+            box-shadow: 0 4px 15px rgba(90, 79, 207, 0.3);
+        }
+        
+        .slider-value {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #5a4fcf;
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(90, 79, 207, 0.1);
+            border-radius: 15px;
+        }
+        
+        .selection-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .selection-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(90, 79, 207, 0.2);
+            border-color: #5a4fcf;
+        }
+        
+        .selection-card.selected {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            color: white;
+            border-color: #5a4fcf;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.2), 0 15px 35px rgba(90, 79, 207, 0.3);
+            transform: translateY(-3px) scale(0.98);
+        }
+        
+        .selection-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .selection-card:hover::before {
+            left: 100%;
+        }
+        
+        .card-number {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .card-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        
+        .year-forms-container {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .year-forms-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .year-forms-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .year-forms-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            border-radius: 10px;
+        }
+        
+        .year-form {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid rgba(90, 79, 207, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .year-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #5a4fcf, #8E44AD);
+        }
+        
+        .year-form h4 {
+            color: #5a4fcf;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            font-size: 0.95em;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #5a4fcf;
+            box-shadow: 0 0 0 4px rgba(90, 79, 207, 0.1), 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .form-group input[readonly],
+        .form-group select[readonly] {
+            background: #f0f8ff !important;
+            border-color: #5a4fcf !important;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        .form-group input[readonly]::after,
+        .form-group select[readonly]::after {
+            content: '🔒';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(90, 79, 207, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(90, 79, 207, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .results-panel {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 40px;
+            margin-top: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+        
+        .prediction-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .prediction-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border-left: 4px solid #5a4fcf;
+            transition: transform 0.3s ease;
+        }
+        
+        .prediction-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .prediction-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #5a4fcf;
+            margin-bottom: 10px;
+        }
+        
+        .prediction-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .medical-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+        }
+        
+        .floating-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .shape {
+            position: absolute;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .shape:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 10%; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 60px; height: 60px; top: 20%; right: 10%; animation-delay: 2s; }
+        .shape:nth-child(3) { width: 40px; height: 40px; bottom: 20%; left: 20%; animation-delay: 4s; }
+        .shape:nth-child(4) { width: 100px; height: 100px; bottom: 10%; right: 20%; animation-delay: 1s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .selection-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="brain-icon">🧠</div>
+            <h1>Alzheimer's Progression Tool</h1>
+            <p>Next-Generation AI-Powered Predictive Analytics</p>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-dot active" id="stepDot1">1</div>
+            <div class="step-dot" id="stepDot2">2</div>
+            <div class="step-dot" id="stepDot3">3</div>
+            <div class="step-dot" id="stepDot4">📊</div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <!-- Step 1: Number of Years -->
+                <div class="form-section" id="step1">
+                    <h3 class="section-title">
+                        📅 Select Study Duration
+                    </h3>
+                    <p style="margin-bottom: 40px; color: #666;">Drag the slider to choose how many years of patient data you want to analyze</p>
+                    
+                    <div class="slider-container">
+                        <div class="slider-label">Study Duration</div>
+                        <div class="slider-wrapper">
+                            <div class="slider-track">
+                                <div class="slider-fill" id="sliderFill"></div>
+                                <div class="slider-thumb" id="sliderThumb"></div>
+                            </div>
+                        </div>
+                        <div class="slider-value">
+                            <span id="yearValue">1</span> Year<span id="yearPlural"></span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn" id="nextStep1" disabled>Next Step →</button>
+                </div>
+
+                <!-- Step 2: Year Selection -->
+                <div class="form-section hidden" id="step2">
+                    <h3 class="section-title">
+                        🎯 Select Time Points
+                    </h3>
+                    <p style="margin-bottom: 25px; color: #666;">Choose <span id="yearCount">1</span> specific year(s) from the timeline (Year 0-7)</p>
+                    
+                    <div class="selection-grid" id="yearSelector">
+                        <!-- Years 0-7 will be generated here -->
+                    </div>
+                    
+                    <button class="btn" id="nextStep2" disabled>Next Step →</button>
+                </div>
+
+                <!-- Step 3: Generate Results -->
+                <div class="form-section hidden" id="step3">
+                    <h3 class="section-title">
+                        🔬 Generate Analysis
+                    </h3>
+                    <p style="margin-bottom: 25px; color: #666;">All patient data has been collected. Generate the AI-powered prediction analysis.</p>
+                    
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 4em; margin-bottom: 20px;">🤖</div>
+                        <h4 style="color: #5a4fcf; margin-bottom: 15px;">Ready for AI Analysis</h4>
+                        <p style="color: #666; margin-bottom: 30px;">Our advanced machine learning model will analyze the patient data and generate progression predictions.</p>
+                        <button class="btn" id="generatePrediction" disabled>🚀 Generate Prediction</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <h3 class="section-title">
+                    📋 Patient Data Collection
+                </h3>
+                
+                <div class="year-forms-container" id="yearFormsContainer">
+                    <div id="yearForms">
+                        <div style="text-align: center; padding: 60px 20px; color: #999;">
+                            <div style="font-size: 3em; margin-bottom: 20px;">📊</div>
+                            <h4>Patient Data Forms</h4>
+                            <p>Select study duration to begin data collection</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="results-panel" id="results">
+            <h3 class="section-title">
+                📈 AI Prediction Results
+            </h3>
+            
+            <div class="prediction-cards" id="predictionCards">
+                <!-- Prediction cards will be generated here -->
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="predictionChart"></canvas>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" id="resetTool">🔄 New Analysis</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedYearCount = 0;
+        let selectedYears = [];
+        let formData = {};
+        let currentStep = 1;
+        
+        // Update step indicator
+        function updateStepIndicator(step) {
+            document.querySelectorAll('.step-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index < step);
+            });
+        }
+        
+        // Slider functionality
+        let isDragging = false;
+        let sliderValue = 1;
+        
+        function initializeSlider() {
+            const sliderThumb = document.getElementById('sliderThumb');
+            const sliderTrack = sliderThumb.closest('.slider-track');
+            const sliderFill = document.getElementById('sliderFill');
+            const yearValue = document.getElementById('yearValue');
+            const yearPlural = document.getElementById('yearPlural');
+            
+            function updateSlider(value) {
+                sliderValue = Math.max(1, Math.min(8, value));
+                const percentage = ((sliderValue - 1) / 7) * 100;
+                
+                sliderFill.style.width = percentage + '%';
+                sliderThumb.style.left = percentage + '%';
+                yearValue.textContent = sliderValue;
+                yearPlural.textContent = sliderValue > 1 ? 's' : '';
+                
+                selectedYearCount = sliderValue;
+                document.getElementById('nextStep1').disabled = false;
+                document.getElementById('yearCount').textContent = sliderValue;
+            }
+            
+            function getValueFromPosition(clientX) {
+                const rect = sliderTrack.getBoundingClientRect();
+                const percentage = (clientX - rect.left) / rect.width;
+                return Math.round(percentage * 7) + 1;
+            }
+            
+            // Mouse events
+            sliderThumb.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const value = getValueFromPosition(e.clientX);
+                updateSlider(value);
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            // Touch events for mobile
+            sliderThumb.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const value = getValueFromPosition(touch.clientX);
+                updateSlider(value);
+            });
+            
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+            
+            // Click on track
+            sliderTrack.addEventListener('click', (e) => {
+                if (e.target === sliderThumb) return;
+                const value = getValueFromPosition(e.clientX);
+                updateSlider(value);
+            });
+            
+            // Initialize
+            updateSlider(1);
+        }
+        
+        // Step 1: Initialize slider
+        
+        document.getElementById('nextStep1').addEventListener('click', function() {
+            generateYearSelector();
+            showStep(2);
+        });
+        
+        // Generate year selector
+        function generateYearSelector() {
+            const yearSelector = document.getElementById('yearSelector');
+            yearSelector.innerHTML = '';
+            
+            for (let i = 0; i <= 7; i++) {
+                const card = document.createElement('div');
+                card.className = 'selection-card';
+                card.dataset.year = i;
+                card.innerHTML = `
+                    <div class="card-number">${i}</div>
+                    <div class="card-label">Year</div>
+                `;
+                
+                card.addEventListener('click', function() {
+                    toggleYearSelection(i);
+                });
+                
+                yearSelector.appendChild(card);
+            }
+        }
+        
+        // Toggle year selection
+        function toggleYearSelection(year) {
+            const card = document.querySelector(`#yearSelector [data-year="${year}"]`);
+            
+            if (selectedYears.includes(year)) {
+                selectedYears = selectedYears.filter(y => y !== year);
+                card.classList.remove('selected');
+            } else if (selectedYears.length < selectedYearCount) {
+                selectedYears.push(year);
+                card.classList.add('selected');
+            }
+            
+            document.getElementById('nextStep2').disabled = selectedYears.length !== selectedYearCount;
+        }
+        
+        document.getElementById('nextStep2').addEventListener('click', function() {
+            generateYearForms();
+            showStep(3);
+        });
+        
+        // Generate forms for each selected year
+        function generateYearForms() {
+            const yearForms = document.getElementById('yearForms');
+            yearForms.innerHTML = '';
+            
+            selectedYears.sort((a, b) => a - b).forEach(year => {
+                const yearForm = document.createElement('div');
+                yearForm.className = 'year-form';
+                yearForm.innerHTML = `
+                    <h4>📊 Year ${year} Assessment</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>👤 Age (years)</label>
+                            <input type="number" min="0" max="100" data-field="age" data-year="${year}" placeholder="e.g., 65" required>
+                        </div>
+                        <div class="form-group">
+                            <label>⚖️ BMI</label>
+                            <input type="number" min="10" max="50" step="0.1" data-field="bmi" data-year="${year}" placeholder="e.g., 24.5" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🎓 Education (years)</label>
+                            <input type="number" min="0" max="25" data-field="education" data-year="${year}" placeholder="e.g., 16" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🧠 CDR-SB Score</label>
+                            <input type="number" min="0" max="20" step="0.5" data-field="cdr_sb" data-year="${year}" placeholder="e.g., 0.5" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🧩 MMSE Score</label>
+                            <input type="number" min="0" max="30" data-field="mmse" data-year="${year}" placeholder="e.g., 28" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🏥 Diagnosis</label>
+                            <select data-field="diagnosis" data-year="${year}" required>
+                                <option value="">Select diagnosis...</option>
+                                <option value="Normal">Normal</option>
+                                <option value="MCI">MCI (Mild Cognitive Impairment)</option>
+                                <option value="AD">AD (Alzheimer's Disease)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🧬 APOE4 Status</label>
+                            <select data-field="apoe4" data-year="${year}" required>
+                                <option value="">Select APOE4 status...</option>
+                                <option value="Non">Non-carrier</option>
+                                <option value="Hetero">Heterozygous</option>
+                                <option value="Homo">Homozygous</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>💓 Hypertension</label>
+                            <select data-field="hypertension" data-year="${year}" required>
+                                <option value="">Select...</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>👫 Gender</label>
+                            <select data-field="gender" data-year="${year}" required>
+                                <option value="">Select gender...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                yearForms.appendChild(yearForm);
+            });
+            
+            // Add event listeners
+            const inputs = yearForms.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const field = this.dataset.field;
+                    const year = parseInt(this.dataset.year);
+                    const value = this.value;
+                    
+                    // Auto-fill related fields
+                    if (['age', 'education', 'apoe4', 'gender'].includes(field)) {
+                        if (value) {
+                            autoFillFields(field, year, value);
+                        } else {
+                            clearAutoFill(field);
+                        }
+                    }
+                    
+                    validateFormCompletion();
+                });
+                
+                input.addEventListener('input', function() {
+                    const field = this.dataset.field;
+                    const year = parseInt(this.dataset.year);
+                    const value = this.value;
+                    
+                    // Auto-fill for age as user types
+                    if (field === 'age' && value) {
+                        autoFillFields(field, year, value);
+                    }
+                    
+                    validateFormCompletion();
+                });
+            });
+        }
+        
+        // Auto-fill related fields
+        function autoFillFields(changedField, changedYear, changedValue) {
+            if (!changedValue) return;
+            
+            selectedYears.forEach(year => {
+                if (year === changedYear) return; // Skip the current year
+                
+                const targetInput = document.querySelector(`[data-field="${changedField}"][data-year="${year}"]`);
+                if (!targetInput) return;
+                
+                switch (changedField) {
+                    case 'age':
+                        // Calculate age based on year difference
+                        const ageDifference = year - changedYear;
+                        const newAge = parseInt(changedValue) + ageDifference;
+                        if (newAge >= 0 && newAge <= 100) {
+                            targetInput.value = newAge;
+                            targetInput.style.background = '#f0f8ff';
+                            targetInput.style.borderColor = '#5a4fcf';
+                            targetInput.setAttribute('readonly', true);
+                        }
+                        break;
+                        
+                    case 'education':
+                        // Education stays constant
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                        
+                    case 'apoe4':
+                        // APOE4 stays constant (genetic factor)
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                        
+                    case 'gender':
+                        // Gender stays constant
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                }
+            });
+        }
+        
+        // Clear auto-filled values when a field is changed back to empty
+        function clearAutoFill(field) {
+            selectedYears.forEach(year => {
+                const input = document.querySelector(`[data-field="${field}"][data-year="${year}"]`);
+                if (input && input.hasAttribute('readonly')) {
+                    input.value = '';
+                    input.style.background = 'white';
+                    input.style.borderColor = '#e0e0e0';
+                    input.removeAttribute('readonly');
+                }
+            });
+        }
+        function validateFormCompletion() {
+            const inputs = document.querySelectorAll('#yearForms input, #yearForms select');
+            let allValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value) {
+                    allValid = false;
+                } else if (input.type === 'number') {
+                    const value = parseFloat(input.value);
+                    const min = parseFloat(input.min) || -Infinity;
+                    const max = parseFloat(input.max) || Infinity;
+                    if (value < min || value > max) {
+                        allValid = false;
+                    }
+                }
+            });
+            
+            document.getElementById('generatePrediction').disabled = !allValid;
+        }
+        
+        // Generate prediction
+        document.getElementById('generatePrediction').addEventListener('click', function() {
+            collectFormData();
+            generateMockPrediction();
+            showStep(4);
+        });
+        
+        // Collect form data
+        function collectFormData() {
+            formData = {};
+            selectedYears.forEach(year => {
+                formData[year] = {};
+                const yearInputs = document.querySelectorAll(`[data-year="${year}"]`);
+                yearInputs.forEach(input => {
+                    formData[year][input.dataset.field] = input.value;
+                });
+            });
+        }
+        
+        // Mock prediction function
+        function generateMockPrediction() {
+            const predictions = selectedYears.map(year => ({
+                year: year,
+                riskScore: Math.random() * 100,
+                cognitiveDecline: Math.random() * 10,
+                progression: Math.random() > 0.6 ? 'Stable' : 'Declining'
+            }));
+            
+            displayResults(predictions);
+        }
+        
+        // Display results
+        function displayResults(predictions) {
+            const predictionCards = document.getElementById('predictionCards');
+            predictionCards.innerHTML = predictions.map(p => `
+                <div class="prediction-card">
+                    <div class="prediction-value">${p.riskScore.toFixed(1)}%</div>
+                    <div class="prediction-label">Year ${p.year} Risk</div>
+                </div>
+            `).join('');
+            
+            // Create chart
+            createPredictionChart(predictions);
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Create prediction chart
+        function createPredictionChart(predictions) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.predictionChartInstance) {
+                window.predictionChartInstance.destroy();
+            }
+            
+            window.predictionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: predictions.map(p => `Year ${p.year}`),
+                    datasets: [{
+                        label: 'Progression Risk (%)',
+                        data: predictions.map(p => p.riskScore),
+                        borderColor: '#5a4fcf',
+                        backgroundColor: 'rgba(90, 79, 207, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#8E44AD',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8,
+                        pointHoverRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Alzheimer\'s Progression Risk Analysis',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#5a4fcf'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Risk Score (%)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(90, 79, 207, 0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Study Years',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(90, 79, 207, 0.1)'
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverBackgroundColor: '#8E44AD'
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // Show specific step
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('#step1, #step2, #step3').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show current step
+            if (step <= 3) {
+                document.getElementById(`step${step}`).classList.remove('hidden');
+            }
+            
+            currentStep = step;
+            updateStepIndicator(step);
+        }
+        
+        // Reset tool
+        document.getElementById('resetTool').addEventListener('click', function() {
+            selectedYearCount = 0;
+            selectedYears = [];
+            formData = {};
+            
+            // Reset slider
+            sliderValue = 1;
+            document.getElementById('sliderFill').style.width = '12.5%';
+            document.getElementById('sliderThumb').style.left = '12.5%';
+            document.getElementById('yearValue').textContent = '1';
+            document.getElementById('yearPlural').textContent = '';
+            
+            // Reset selections
+            document.querySelectorAll('.selection-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Reset buttons
+            document.getElementById('nextStep1').disabled = true;
+            document.getElementById('nextStep2').disabled = true;
+            document.getElementById('generatePrediction').disabled = true;
+            
+            // Reset forms
+            document.getElementById('yearForms').innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: #999;">
+                    <div style="font-size: 3em; margin-bottom: 20px;">📊</div>
+                    <h4>Patient Data Forms</h4>
+                    <p>Select study duration to begin data collection</p>
+                </div>
+            `;
+            
+            // Hide results
+            document.getElementById('results').style.display = 'none';
+            
+            // Destroy chart
+            if (window.predictionChartInstance) {
+                window.predictionChartInstance.destroy();
+            }
+            
+            // Show first step
+            showStep(1);
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Initialize
+        updateStepIndicator(1);
+        initializeSlider();
+    </script>
+</body>
+</html>
