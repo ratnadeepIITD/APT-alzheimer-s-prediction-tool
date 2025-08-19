@@ -119,60 +119,73 @@ class ADProgressionModel(nn.Module):
 # ============ DATA PREPROCESSING FOR INFERENCE ============
 
 def process_form_data(form_data):
-    """Convert web form data to model input format - MUST MATCH TRAINING EXACTLY"""
+    """Convert web form data to model input format - MATCHES YOUR EXACT TRAINING FEATURES"""
     
     # Extract years and sort them
     years = sorted([int(year) for year in form_data.keys()])
     first_year_data = form_data[str(years[0])]
     
-    # Process static features - SAME ORDER AS TRAINING!
-    # Based on your original training code static_cols order:
-    # ['Age','BMI','HMHYPERT','PTGENDER_Male','PTGENDER_Female'] + DIAGNOSIS_* + APOE4_*
+    # VALUE MAPPINGS: Web form → Training data
+    # Based on your training features, you used numbers (0.0, 1.0, 2.0)
+    
+    # Diagnosis mapping (web form → training numeric codes)
+    diagnosis_mapping = {
+        'Normal': 0.0,    # DIAGNOSIS_0.0
+        'MCI': 1.0,       # DIAGNOSIS_1.0  
+        'AD': 2.0         # DIAGNOSIS_2.0
+    }
+    
+    # APOE4 mapping (web form → training numeric codes)
+    apoe4_mapping = {
+        'Non': 0.0,       # APOE4_0.0
+        'Hetero': 1.0,    # APOE4_1.0
+        'Homo': 2.0       # APOE4_2.0
+    }
+    
+    # Process static features - YOUR EXACT ORDER:
+    # ['Age', 'BMI', 'HMHYPERT', 'PTGENDER_Male', 'PTGENDER_Female', 'MMSE', 
+    #  'DIAGNOSIS_0.0', 'DIAGNOSIS_1.0', 'DIAGNOSIS_2.0', 'APOE4_0.0', 'APOE4_1.0', 'APOE4_2.0']
     
     static_features = []
     
-    # 1. Age
+    # 0. Age
     static_features.append(float(first_year_data['age']))
     
-    # 2. BMI  
+    # 1. BMI  
     static_features.append(float(first_year_data['bmi']))
     
-    # 3. HMHYPERT (Hypertension)
+    # 2. HMHYPERT (Hypertension: Yes=1, No=0)
     static_features.append(1.0 if first_year_data['hypertension'] == 'Yes' else 0.0)
     
-    # 4. PTGENDER_Male
+    # 3. PTGENDER_Male
     static_features.append(1.0 if first_year_data['gender'] == 'Male' else 0.0)
     
-    # 5. PTGENDER_Female  
+    # 4. PTGENDER_Female  
     static_features.append(1.0 if first_year_data['gender'] == 'Female' else 0.0)
     
-    # 6-N. DIAGNOSIS dummies (get_dummies creates these in alphabetical order)
-    # Normal is baseline (all zeros), MCI and AD get dummy variables
-    # Order depends on what diagnoses were in your training data
-    # You need to check your training data for exact order!
+    # 5. MMSE (normalized by 30 in training)
+    mmse_raw = float(first_year_data.get('mmse', 30))  # Default to 30 if missing
+    static_features.append(mmse_raw / 30.0)  # Same normalization as training
     
-    # For now, assuming standard order (adjust based on your training data):
-    diagnosis = first_year_data['diagnosis']
+    # 6. DIAGNOSIS_0.0 (Normal)
+    diagnosis_code = diagnosis_mapping[first_year_data['diagnosis']]
+    static_features.append(1.0 if diagnosis_code == 0.0 else 0.0)
     
-    # DIAGNOSIS_AD (if AD was in training data)
-    static_features.append(1.0 if diagnosis == 'AD' else 0.0)
+    # 7. DIAGNOSIS_1.0 (MCI)
+    static_features.append(1.0 if diagnosis_code == 1.0 else 0.0)
     
-    # DIAGNOSIS_MCI (if MCI was in training data) 
-    static_features.append(1.0 if diagnosis == 'MCI' else 0.0)
+    # 8. DIAGNOSIS_2.0 (AD)
+    static_features.append(1.0 if diagnosis_code == 2.0 else 0.0)
     
-    # DIAGNOSIS_Normal is usually baseline (not included as dummy)
+    # 9. APOE4_0.0 (Non)
+    apoe4_code = apoe4_mapping[first_year_data['apoe4']]
+    static_features.append(1.0 if apoe4_code == 0.0 else 0.0)
     
-    # N+1-M. APOE4 dummies (get_dummies creates these in alphabetical order)
-    # Non is baseline (all zeros), Hetero and Homo get dummy variables
-    apoe4 = first_year_data['apoe4']
+    # 10. APOE4_1.0 (Hetero)
+    static_features.append(1.0 if apoe4_code == 1.0 else 0.0)
     
-    # APOE4_Hetero (if Hetero was in training data)
-    static_features.append(1.0 if apoe4 == 'Hetero' else 0.0)
-    
-    # APOE4_Homo (if Homo was in training data)
-    static_features.append(1.0 if apoe4 == 'Homo' else 0.0)
-    
-    # APOE4_Non is usually baseline (not included as dummy)
+    # 11. APOE4_2.0 (Homo)
+    static_features.append(1.0 if apoe4_code == 2.0 else 0.0)
     
     # Temporal data (CDRSB values)
     temporal_data = []
@@ -186,8 +199,15 @@ def process_form_data(form_data):
     static_tensor = torch.tensor([static_features], dtype=torch.float32)
     temporal_tensor = torch.tensor([temporal_data], dtype=torch.float32).unsqueeze(-1)
     
-    print(f"Static features: {len(static_features)} dimensions")
-    print(f"Temporal data: {len(temporal_data)} time points")
+    # Validation
+    expected_features = 12  # Your exact count
+    if len(static_features) != expected_features:
+        raise ValueError(f"Feature count mismatch! Expected {expected_features}, got {len(static_features)}")
+    
+    print(f"✅ Static features: {len(static_features)} dimensions (matches training)")
+    print(f"📊 Feature values: Age={first_year_data['age']}, BMI={first_year_data['bmi']}, "
+          f"Diagnosis={first_year_data['diagnosis']}→{diagnosis_code}, APOE4={first_year_data['apoe4']}→{apoe4_code}")
+    print(f"📈 Temporal data: {len(temporal_data)} time points: {obs_times}")
     
     return static_tensor, temporal_tensor, obs_times
 
