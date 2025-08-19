@@ -47,7 +47,7 @@ def predict():
             }), 400
         
         # Validate required fields for each year
-        required_fields = ['age', 'bmi', 'education', 'cdr_sb', 'diagnosis', 
+        required_fields = ['age', 'bmi', 'education', 'mmse', 'cdr_sb', 'diagnosis', 
                           'apoe4', 'hypertension', 'gender']
         
         for year, year_data in patient_data.items():
