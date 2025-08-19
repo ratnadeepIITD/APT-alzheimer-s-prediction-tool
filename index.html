@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alzheimer's Progression Tool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #8B5A8C 0%, #5A4FCF 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #8E44AD;
+        }
+        
+        .step h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        select:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #8E44AD;
+            box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.2);
+        }
+        
+        .year-forms {
+            display: none;
+        }
+        
+        .year-form {
+            background: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .year-form h4 {
+            color: #8E44AD;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #8E44AD 0%, #9B59B6 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin: 10px 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(142, 68, 173, 0.3);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .year-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .year-btn {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .year-btn:hover {
+            border-color: #8E44AD;
+            background: #f8f0ff;
+        }
+        
+        .year-btn.selected {
+            background: #8E44AD;
+            color: white;
+            border-color: #8E44AD;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8E44AD, #9B59B6);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Alzheimer's Progression Tool</h1>
+            <p>Advanced predictive modeling for Alzheimer's disease progression</p>
+        </div>
+        
+        <div class="content">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <!-- Step 1: Number of Years -->
+            <div class="step" id="step1">
+                <h3>Step 1: Select Number of Years</h3>
+                <div class="form-group">
+                    <label for="numYears">How many years of data do you want to provide? (1-8)</label>
+                    <select id="numYears">
+                        <option value="">Select number of years...</option>
+                        <option value="1">1 Year</option>
+                        <option value="2">2 Years</option>
+                        <option value="3">3 Years</option>
+                        <option value="4">4 Years</option>
+                        <option value="5">5 Years</option>
+                        <option value="6">6 Years</option>
+                        <option value="7">7 Years</option>
+                        <option value="8">8 Years</option>
+                    </select>
+                </div>
+                <button class="btn" id="nextStep1" disabled>Next Step</button>
+            </div>
+            
+            <!-- Step 2: Year Selection -->
+            <div class="step hidden" id="step2">
+                <h3>Step 2: Select Which Years (0-7)</h3>
+                <p>Choose <span id="yearCount">1</span> year(s) from the options below:</p>
+                <div class="year-selector" id="yearSelector"></div>
+                <button class="btn" id="nextStep2" disabled>Next Step</button>
+            </div>
+            
+            <!-- Step 3: Data Entry -->
+            <div class="step hidden" id="step3">
+                <h3>Step 3: Enter Medical Data</h3>
+                <div id="yearForms"></div>
+                <button class="btn" id="generatePrediction" disabled>Generate Prediction</button>
+            </div>
+            
+            <!-- Results -->
+            <div class="results" id="results">
+                <h3>Prediction Results</h3>
+                <div id="predictionSummary"></div>
+                <div class="chart-container">
+                    <canvas id="predictionChart"></canvas>
+                </div>
+                <button class="btn" id="resetTool">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedYears = [];
+        let formData = {};
+        let currentStep = 1;
+        
+        // Update progress bar
+        function updateProgress(step) {
+            const progress = (step / 3) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+        
+        // Step 1: Number of years selection
+        document.getElementById('numYears').addEventListener('change', function() {
+            const numYears = parseInt(this.value);
+            if (numYears >= 1 && numYears <= 8) {
+                document.getElementById('nextStep1').disabled = false;
+                document.getElementById('yearCount').textContent = numYears;
+            }
+        });
+        
+        document.getElementById('nextStep1').addEventListener('click', function() {
+            const numYears = parseInt(document.getElementById('numYears').value);
+            generateYearSelector(numYears);
+            showStep(2);
+        });
+        
+        // Generate year selector buttons
+        function generateYearSelector(numYears) {
+            const yearSelector = document.getElementById('yearSelector');
+            yearSelector.innerHTML = '';
+            
+            for (let i = 0; i <= 7; i++) {
+                const yearBtn = document.createElement('div');
+                yearBtn.className = 'year-btn';
+                yearBtn.textContent = `Year ${i}`;
+                yearBtn.dataset.year = i;
+                
+                yearBtn.addEventListener('click', function() {
+                    toggleYearSelection(i, numYears);
+                });
+                
+                yearSelector.appendChild(yearBtn);
+            }
+        }
+        
+        // Toggle year selection
+        function toggleYearSelection(year, maxYears) {
+            const yearBtn = document.querySelector(`[data-year="${year}"]`);
+            
+            if (selectedYears.includes(year)) {
+                selectedYears = selectedYears.filter(y => y !== year);
+                yearBtn.classList.remove('selected');
+            } else if (selectedYears.length < maxYears) {
+                selectedYears.push(year);
+                yearBtn.classList.add('selected');
+            }
+            
+            document.getElementById('nextStep2').disabled = selectedYears.length !== maxYears;
+        }
+        
+        document.getElementById('nextStep2').addEventListener('click', function() {
+            generateYearForms();
+            showStep(3);
+        });
+        
+        // Generate forms for each selected year
+        function generateYearForms() {
+            const yearForms = document.getElementById('yearForms');
+            yearForms.innerHTML = '';
+            
+            selectedYears.sort((a, b) => a - b).forEach(year => {
+                const yearForm = document.createElement('div');
+                yearForm.className = 'year-form';
+                yearForm.innerHTML = `
+                    <h4>Year ${year} Data</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Age (0-100)</label>
+                            <input type="number" min="0" max="100" data-field="age" data-year="${year}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>BMI</label>
+                            <input type="number" min="10" max="50" step="0.1" data-field="bmi" data-year="${year}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Education (years)</label>
+                            <input type="number" min="0" max="25" data-field="education" data-year="${year}" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>CDR-SB</label>
+                            <input type="number" min="0" max="20" step="0.5" data-field="cdr_sb" data-year="${year}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>MMSE</label>
+                            <input type="number" min="0" max="30" data-field="mmse" data-year="${year}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Diagnosis</label>
+                            <select data-field="diagnosis" data-year="${year}" required>
+                                <option value="">Select...</option>
+                                <option value="Normal">Normal</option>
+                                <option value="MCI">MCI</option>
+                                <option value="AD">AD</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>APOE4</label>
+                            <select data-field="apoe4" data-year="${year}" required>
+                                <option value="">Select...</option>
+                                <option value="Non">Non</option>
+                                <option value="Hetero">Hetero</option>
+                                <option value="Homo">Homo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Hypertension</label>
+                            <select data-field="hypertension" data-year="${year}" required>
+                                <option value="">Select...</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select data-field="gender" data-year="${year}" required>
+                                <option value="">Select...</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                yearForms.appendChild(yearForm);
+            });
+            
+            // Add event listeners to validate form completion
+            const inputs = yearForms.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                input.addEventListener('change', validateFormCompletion);
+                input.addEventListener('input', validateFormCompletion);
+            });
+        }
+        
+        // Validate if all forms are completed
+        function validateFormCompletion() {
+            const inputs = document.querySelectorAll('#yearForms input, #yearForms select');
+            let allValid = true;
+            
+            inputs.forEach(input => {
+                if (!input.value) {
+                    allValid = false;
+                } else if (input.type === 'number') {
+                    const value = parseFloat(input.value);
+                    const min = parseFloat(input.min) || -Infinity;
+                    const max = parseFloat(input.max) || Infinity;
+                    if (value < min || value > max) {
+                        allValid = false;
+                    }
+                }
+            });
+            
+            document.getElementById('generatePrediction').disabled = !allValid;
+        }
+        
+        // Generate prediction (mock function - replace with your model API call)
+        document.getElementById('generatePrediction').addEventListener('click', function() {
+            collectFormData();
+            generateMockPrediction();
+            showStep(4);
+        });
+        
+        // Collect form data
+        function collectFormData() {
+            formData = {};
+            selectedYears.forEach(year => {
+                formData[year] = {};
+                const yearInputs = document.querySelectorAll(`[data-year="${year}"]`);
+                yearInputs.forEach(input => {
+                    const field = input.dataset.field;
+                    formData[year][field] = input.value;
+                });
+            });
+        }
+        
+        // Mock prediction function (replace this with your model API call)
+        function generateMockPrediction() {
+            // This is where you'll integrate your actual model
+            const mockPredictions = selectedYears.map(year => ({
+                year: year,
+                riskScore: Math.random() * 100,
+                prediction: Math.random() > 0.5 ? 'Low Risk' : 'High Risk'
+            }));
+            
+            displayResults(mockPredictions);
+        }
+        
+        // Display results
+        function displayResults(predictions) {
+            const summary = document.getElementById('predictionSummary');
+            summary.innerHTML = `
+                <h4>Summary</h4>
+                <p>Analysis completed for ${selectedYears.length} year(s) of data.</p>
+                <div style="margin-top: 15px;">
+                    ${predictions.map(p => `
+                        <div style="padding: 10px; margin: 5px 0; background: white; border-radius: 5px; border-left: 4px solid ${p.prediction === 'Low Risk' ? '#28a745' : '#dc3545'};">
+                            <strong>Year ${p.year}:</strong> ${p.prediction} (Score: ${p.riskScore.toFixed(1)})
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Create chart
+            createPredictionChart(predictions);
+            
+            document.getElementById('results').style.display = 'block';
+        }
+        
+        // Create prediction chart
+        function createPredictionChart(predictions) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: predictions.map(p => `Year ${p.year}`),
+                    datasets: [{
+                        label: 'Risk Score',
+                        data: predictions.map(p => p.riskScore),
+                        borderColor: '#8E44AD',
+                        backgroundColor: 'rgba(142, 68, 173, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Risk Score'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Years'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Risk Score Progression'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Show specific step
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step, .results').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show current step
+            if (step <= 3) {
+                document.getElementById(`step${step}`).classList.remove('hidden');
+            } else {
+                document.getElementById('results').style.display = 'block';
+            }
+            
+            currentStep = step;
+            updateProgress(step);
+        }
+        
+        // Reset tool
+        document.getElementById('resetTool').addEventListener('click', function() {
+            selectedYears = [];
+            formData = {};
+            document.getElementById('numYears').value = '';
+            document.getElementById('nextStep1').disabled = true;
+            document.getElementById('nextStep2').disabled = true;
+            document.getElementById('generatePrediction').disabled = true;
+            document.getElementById('results').style.display = 'none';
+            showStep(1);
+        });
+        
+        // Initialize
+        updateProgress(1);
+    </script>
+</body>
+</html>
