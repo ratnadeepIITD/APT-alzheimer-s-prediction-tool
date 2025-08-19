@@ -169,11 +169,120 @@
             margin-bottom: 30px;
         }
         
-        .selection-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
+        .slider-container {
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border: 1px solid rgba(90, 79, 207, 0.1);
+        }
+        
+        .slider-label {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #5a4fcf;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .slider-wrapper {
+            position: relative;
+            margin: 40px 0;
+        }
+        
+        .slider-track {
+            position: relative;
+            height: 8px;
+            background: linear-gradient(90deg, #e0e0e0, #f0f0f0);
+            border-radius: 4px;
+            margin: 30px 0 40px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .slider-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #5a4fcf, #8E44AD);
+            border-radius: 4px;
+            width: 12.5%; /* 1/8 = 12.5% */
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(90, 79, 207, 0.3);
+        }
+        
+        .slider-thumb {
+            position: absolute;
+            top: -8px;
+            left: 12.5%;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            border-radius: 50%;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(90, 79, 207, 0.4);
+            border: 3px solid white;
+            transform: translateX(-50%);
+        }
+        
+        .slider-thumb:hover {
+            transform: translateX(-50%) scale(1.2);
+            box-shadow: 0 6px 20px rgba(90, 79, 207, 0.5);
+        }
+        
+        .slider-thumb:active {
+            cursor: grabbing;
+            transform: translateX(-50%) scale(1.1);
+        }
+        
+        .slider-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 0 12px;
+        }
+        
+        .marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .marker:hover {
+            border-color: #5a4fcf;
+            color: #5a4fcf;
+            transform: scale(1.1);
+        }
+        
+        .marker.active {
+            background: linear-gradient(135deg, #5a4fcf, #8E44AD);
+            color: white;
+            border-color: #5a4fcf;
+            transform: scale(1.15);
+            box-shadow: 0 4px 15px rgba(90, 79, 207, 0.3);
+        }
+        
+        .slider-value {
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #5a4fcf;
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(90, 79, 207, 0.1);
+            border-radius: 15px;
         }
         
         .selection-card {
@@ -316,6 +425,24 @@
             border-color: #5a4fcf;
             box-shadow: 0 0 0 4px rgba(90, 79, 207, 0.1), 0 5px 20px rgba(0,0,0,0.1);
             transform: translateY(-2px);
+        }
+        
+        .form-group input[readonly],
+        .form-group select[readonly] {
+            background: #f0f8ff !important;
+            border-color: #5a4fcf !important;
+            cursor: not-allowed;
+            position: relative;
+        }
+        
+        .form-group input[readonly]::after,
+        .form-group select[readonly]::after {
+            content: '🔒';
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
         }
         
         .btn {
@@ -508,40 +635,18 @@
                     <h3 class="section-title">
                         📅 Select Study Duration
                     </h3>
-                    <p style="margin-bottom: 25px; color: #666;">Choose how many years of patient data you want to analyze (1-8 years)</p>
+                    <p style="margin-bottom: 40px; color: #666;">Drag the slider to choose how many years of patient data you want to analyze</p>
                     
-                    <div class="selection-grid" id="yearCountGrid">
-                        <div class="selection-card" data-years="1">
-                            <div class="card-number">1</div>
-                            <div class="card-label">Year</div>
+                    <div class="slider-container">
+                        <div class="slider-label">Study Duration</div>
+                        <div class="slider-wrapper">
+                            <div class="slider-track">
+                                <div class="slider-fill" id="sliderFill"></div>
+                                <div class="slider-thumb" id="sliderThumb"></div>
+                            </div>
                         </div>
-                        <div class="selection-card" data-years="2">
-                            <div class="card-number">2</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="3">
-                            <div class="card-number">3</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="4">
-                            <div class="card-number">4</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="5">
-                            <div class="card-number">5</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="6">
-                            <div class="card-number">6</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="7">
-                            <div class="card-number">7</div>
-                            <div class="card-label">Years</div>
-                        </div>
-                        <div class="selection-card" data-years="8">
-                            <div class="card-number">8</div>
-                            <div class="card-label">Years</div>
+                        <div class="slider-value">
+                            <span id="yearValue">1</span> Year<span id="yearPlural"></span>
                         </div>
                     </div>
                     
@@ -628,16 +733,84 @@
             });
         }
         
-        // Step 1: Year count selection
-        document.querySelectorAll('#yearCountGrid .selection-card').forEach(card => {
-            card.addEventListener('click', function() {
-                document.querySelectorAll('#yearCountGrid .selection-card').forEach(c => c.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedYearCount = parseInt(this.dataset.years);
+        // Slider functionality
+        let isDragging = false;
+        let sliderValue = 1;
+        
+        function initializeSlider() {
+            const sliderThumb = document.getElementById('sliderThumb');
+            const sliderTrack = sliderThumb.closest('.slider-track');
+            const sliderFill = document.getElementById('sliderFill');
+            const yearValue = document.getElementById('yearValue');
+            const yearPlural = document.getElementById('yearPlural');
+            
+            function updateSlider(value) {
+                sliderValue = Math.max(1, Math.min(8, value));
+                const percentage = ((sliderValue - 1) / 7) * 100;
+                
+                sliderFill.style.width = percentage + '%';
+                sliderThumb.style.left = percentage + '%';
+                yearValue.textContent = sliderValue;
+                yearPlural.textContent = sliderValue > 1 ? 's' : '';
+                
+                selectedYearCount = sliderValue;
                 document.getElementById('nextStep1').disabled = false;
-                document.getElementById('yearCount').textContent = selectedYearCount;
+                document.getElementById('yearCount').textContent = sliderValue;
+            }
+            
+            function getValueFromPosition(clientX) {
+                const rect = sliderTrack.getBoundingClientRect();
+                const percentage = (clientX - rect.left) / rect.width;
+                return Math.round(percentage * 7) + 1;
+            }
+            
+            // Mouse events
+            sliderThumb.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                e.preventDefault();
             });
-        });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const value = getValueFromPosition(e.clientX);
+                updateSlider(value);
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            // Touch events for mobile
+            sliderThumb.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                e.preventDefault();
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const touch = e.touches[0];
+                const value = getValueFromPosition(touch.clientX);
+                updateSlider(value);
+            });
+            
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+            
+            // Click on track
+            sliderTrack.addEventListener('click', (e) => {
+                if (e.target === sliderThumb) return;
+                const value = getValueFromPosition(e.clientX);
+                updateSlider(value);
+            });
+            
+            // Initialize
+            updateSlider(1);
+        }
+        
+        // Step 1: Initialize slider
         
         document.getElementById('nextStep1').addEventListener('click', function() {
             generateYearSelector();
@@ -759,12 +932,100 @@
             // Add event listeners
             const inputs = yearForms.querySelectorAll('input, select');
             inputs.forEach(input => {
-                input.addEventListener('change', validateFormCompletion);
-                input.addEventListener('input', validateFormCompletion);
+                input.addEventListener('change', function() {
+                    const field = this.dataset.field;
+                    const year = parseInt(this.dataset.year);
+                    const value = this.value;
+                    
+                    // Auto-fill related fields
+                    if (['age', 'education', 'apoe4', 'gender'].includes(field)) {
+                        if (value) {
+                            autoFillFields(field, year, value);
+                        } else {
+                            clearAutoFill(field);
+                        }
+                    }
+                    
+                    validateFormCompletion();
+                });
+                
+                input.addEventListener('input', function() {
+                    const field = this.dataset.field;
+                    const year = parseInt(this.dataset.year);
+                    const value = this.value;
+                    
+                    // Auto-fill for age as user types
+                    if (field === 'age' && value) {
+                        autoFillFields(field, year, value);
+                    }
+                    
+                    validateFormCompletion();
+                });
             });
         }
         
-        // Validate form completion
+        // Auto-fill related fields
+        function autoFillFields(changedField, changedYear, changedValue) {
+            if (!changedValue) return;
+            
+            selectedYears.forEach(year => {
+                if (year === changedYear) return; // Skip the current year
+                
+                const targetInput = document.querySelector(`[data-field="${changedField}"][data-year="${year}"]`);
+                if (!targetInput) return;
+                
+                switch (changedField) {
+                    case 'age':
+                        // Calculate age based on year difference
+                        const ageDifference = year - changedYear;
+                        const newAge = parseInt(changedValue) + ageDifference;
+                        if (newAge >= 0 && newAge <= 100) {
+                            targetInput.value = newAge;
+                            targetInput.style.background = '#f0f8ff';
+                            targetInput.style.borderColor = '#5a4fcf';
+                            targetInput.setAttribute('readonly', true);
+                        }
+                        break;
+                        
+                    case 'education':
+                        // Education stays constant
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                        
+                    case 'apoe4':
+                        // APOE4 stays constant (genetic factor)
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                        
+                    case 'gender':
+                        // Gender stays constant
+                        targetInput.value = changedValue;
+                        targetInput.style.background = '#f0f8ff';
+                        targetInput.style.borderColor = '#5a4fcf';
+                        targetInput.setAttribute('readonly', true);
+                        break;
+                }
+            });
+        }
+        
+        // Clear auto-filled values when a field is changed back to empty
+        function clearAutoFill(field) {
+            selectedYears.forEach(year => {
+                const input = document.querySelector(`[data-field="${field}"][data-year="${year}"]`);
+                if (input && input.hasAttribute('readonly')) {
+                    input.value = '';
+                    input.style.background = 'white';
+                    input.style.borderColor = '#e0e0e0';
+                    input.removeAttribute('readonly');
+                }
+            });
+        }
         function validateFormCompletion() {
             const inputs = document.querySelectorAll('#yearForms input, #yearForms select');
             let allValid = true;
@@ -950,6 +1211,13 @@
             selectedYears = [];
             formData = {};
             
+            // Reset slider
+            sliderValue = 1;
+            document.getElementById('sliderFill').style.width = '12.5%';
+            document.getElementById('sliderThumb').style.left = '12.5%';
+            document.getElementById('yearValue').textContent = '1';
+            document.getElementById('yearPlural').textContent = '';
+            
             // Reset selections
             document.querySelectorAll('.selection-card').forEach(card => {
                 card.classList.remove('selected');
@@ -986,6 +1254,7 @@
         
         // Initialize
         updateStepIndicator(1);
+        initializeSlider();
     </script>
 </body>
 </html>
